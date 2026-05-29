@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ночной Сказочник ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="skazochnik.css">
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+<div class="moon"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">✦ AI Hackathon Project ✦</div>
+    <h1>Ночной Сказочник</h1>
+    <p class="subtitle">Волшебная сказка для вашего ребёнка — каждый вечер новая</p>
+  </header>
+
+  <!-- API Key Notice -->
+  <div class="api-notice" id="apiNotice">
+    <strong>Для работы нужен ключ Claude API.</strong> Введите ваш API ключ — он сохранится в браузере только на эту сессию.
+    <div class="api-key-row">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api..." />
+      <button onclick="saveApiKey()">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Имя ребёнка</label>
+        <input type="text" id="childName" placeholder="Например, Маша" />
+      </div>
+      <div class="form-row">
+        <label>Возраст</label>
+        <select id="childAge">
+          <option value="3-4">3–4 года</option>
+          <option value="5-6" selected>5–6 лет</option>
+          <option value="7-8">7–8 лет</option>
+          <option value="9-10">9–10 лет</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Что любит ребёнок? (выбери до 3)</label>
+      <div class="interests-grid" id="interests">
+        <button class="interest-tag" onclick="toggleInterest(this)">🦕 Динозавры</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🚀 Космос</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🐱 Котики</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🧚 Феи</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🐉 Драконы</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🌊 Море</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🎨 Рисование</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">⚽ Футбол</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🦸 Супергерои</button>
+        <button class="interest-tag" onclick="toggleInterest(this)">🍄 Грибы и лес</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Мораль сказки</label>
+      <div class="moral-input" id="morals">
+        <button class="moral-chip active" onclick="selectMoral(this)">Дружба побеждает всё</button>
+        <button class="moral-chip" onclick="selectMoral(this)">Смелость — это важно</button>
+        <button class="moral-chip" onclick="selectMoral(this)">Помогай другим</button>
+        <button class="moral-chip" onclick="selectMoral(this)">Будь добрым</button>
+        <button class="moral-chip" onclick="selectMoral(this)">Верь в себя</button>
+      </div>
+    </div>
+
+    <button class="btn-generate" id="genBtn" onclick="generateStory()">
+      <span class="btn-inner">✨ Создать сказку</span>
+    </button>
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="loading-orb"></div>
+    <div class="loading-text" id="loadingText">Сказочник придумывает историю...</div>
+  </div>
+
+  <!-- Story Result -->
+  <div class="story-card" id="storyCard">
+    <div class="story-header">
+      <span class="story-title-tag">🌙 Сказка на ночь</span>
+    </div>
+    <div class="illustration-wrap" id="illustrationWrap">
+      <img id="illustrationImg" alt="Иллюстрация к сказке" />
+      <div class="illustration-placeholder" id="illustrationPlaceholder">
+        <span class="big">🎨</span>
+        <span>Иллюстрация генерируется...</span>
+      </div>
+    </div>
+    <div class="story-text" id="storyText"></div>
+    <div class="tts-bar">
+      <button class="tts-btn" id="ttsBtn" onclick="toggleTTS()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+        Озвучить
+      </button>
+      <div class="tts-info">
+        <span class="tts-label" id="ttsQuality">Браузерный голос</span>
+        <div class="elevenlabs-key-row">
+          <input type="password" id="elevenlabsKeyInput" placeholder="ElevenLabs ключ для AI-голоса" />
+          <button onclick="saveElevenlabsKey()">✓ ОК</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn-new" onclick="newStory()">↺ Новая сказка</button>
+  </div>
+</div>
+
+<script src="skazochnik.js"></script>
+</body>
+</html>
