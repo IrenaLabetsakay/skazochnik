@@ -56,7 +56,6 @@ scheduleShootingStar();
 
 // --- State ---
 let apiKey = localStorage.getItem('claude_api_key') || '';
-let elevenlabsApiKey = localStorage.getItem('elevenlabs_api_key') || '';
 let selectedInterests = [];
 let selectedMoral = 'Дружба побеждает всё';
 let currentStoryText = '';
@@ -65,19 +64,16 @@ let ttsSpeaking = false;
 let ttsPaused = false;
 let ttsResumeInterval = null;
 let ttsAudio = null;
-let ttsAudioUrl = null;
+let ttsAudioUrls = [];
+let ttsAudioQueue = [];
+let ttsAudioQueueIdx = 0;
 
-const ELEVENLABS_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel — multilingual female
-const ELEVENLABS_MODEL = 'eleven_multilingual_v2';
+const FREETTS_VOICE = 'ru-RU-DariyaNeural';
+const FREETTS_RATE = '-20%';
 
 if (apiKey) {
   document.getElementById('apiNotice').style.display = 'none';
   document.getElementById('apiKeyInput').value = apiKey;
-}
-
-if (elevenlabsApiKey) {
-  document.getElementById('elevenlabsKeyInput').value = elevenlabsApiKey;
-  document.getElementById('ttsQuality').textContent = 'ElevenLabs AI голос ✨';
 }
 
 function saveApiKey() {
@@ -86,18 +82,6 @@ function saveApiKey() {
   apiKey = val;
   localStorage.setItem('claude_api_key', apiKey);
   document.getElementById('apiNotice').style.display = 'none';
-}
-
-function saveElevenlabsKey() {
-  const val = document.getElementById('elevenlabsKeyInput').value.trim();
-  elevenlabsApiKey = val;
-  if (val) {
-    localStorage.setItem('elevenlabs_api_key', val);
-    document.getElementById('ttsQuality').textContent = 'ElevenLabs AI голос ✨';
-  } else {
-    localStorage.removeItem('elevenlabs_api_key');
-    document.getElementById('ttsQuality').textContent = 'Браузерный голос';
-  }
 }
 
 function toggleInterest(btn) {
@@ -268,53 +252,74 @@ function stopTTS() {
   speechSynthesis.cancel();
   if (ttsAudio) {
     ttsAudio.pause();
-    ttsAudio.src = '';
+    ttsAudio.onended = null;
+    ttsAudio.onerror = null;
     ttsAudio = null;
   }
-  if (ttsAudioUrl) {
-    URL.revokeObjectURL(ttsAudioUrl);
-    ttsAudioUrl = null;
-  }
+  ttsAudioQueue = [];
+  ttsAudioQueueIdx = 0;
+  ttsAudioUrls.forEach(u => URL.revokeObjectURL(u));
+  ttsAudioUrls = [];
   ttsSpeaking = false;
   ttsPaused = false;
   updateTTSBtn('stopped');
 }
 
-async function speakWithElevenLabs(text) {
-  updateTTSBtn('loading');
-
-  const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
-    method: 'POST',
-    headers: {
-      'Accept': 'audio/mpeg',
-      'Content-Type': 'application/json',
-      'xi-api-key': elevenlabsApiKey
-    },
-    body: JSON.stringify({
-      text,
-      model_id: ELEVENLABS_MODEL,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.35, use_speaker_boost: true }
-    })
-  });
-
-  if (!resp.ok) {
-    let msg = `ElevenLabs ошибка ${resp.status}`;
-    try { const e = await resp.json(); msg = e.detail?.message || e.detail?.status || msg; } catch {}
-    throw new Error(msg);
+function splitTextForTTS(text, maxLen = 950) {
+  const chunks = [];
+  const sentences = text.split(/(?<=[.!?…])\s+/);
+  let current = '';
+  for (const sentence of sentences) {
+    const next = current ? current + ' ' + sentence : sentence;
+    if (next.length <= maxLen) {
+      current = next;
+    } else {
+      if (current) chunks.push(current);
+      current = sentence.length <= maxLen ? sentence : sentence.slice(0, maxLen);
+    }
   }
+  if (current) chunks.push(current);
+  return chunks;
+}
 
-  const blob = await resp.blob();
-  if (ttsAudioUrl) { URL.revokeObjectURL(ttsAudioUrl); ttsAudioUrl = null; }
-  ttsAudioUrl = URL.createObjectURL(blob);
-
-  ttsAudio = new Audio(ttsAudioUrl);
-  ttsAudio.onended = () => stopTTS();
+function playNextFreeTTS() {
+  if (ttsAudioQueueIdx >= ttsAudioQueue.length) { stopTTS(); return; }
+  ttsAudio = ttsAudioQueue[ttsAudioQueueIdx];
+  ttsAudio.onended = () => { ttsAudioQueueIdx++; playNextFreeTTS(); };
   ttsAudio.onerror = () => stopTTS();
-  await ttsAudio.play();
+  ttsAudio.play();
+}
+
+async function speakWithFreeTTS(text) {
+  updateTTSBtn('loading');
+  const chunks = splitTextForTTS(text);
+
+  const fileIds = await Promise.all(chunks.map(async chunk => {
+    const resp = await fetch('https://freetts.org/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: chunk, voice: FREETTS_VOICE, rate: FREETTS_RATE })
+    });
+    if (!resp.ok) throw new Error(`FreeTTS ${resp.status}`);
+    const { file_id } = await resp.json();
+    return file_id;
+  }));
+
+  const blobs = await Promise.all(fileIds.map(async id => {
+    const resp = await fetch(`https://freetts.org/api/audio/${id}`);
+    if (!resp.ok) throw new Error(`FreeTTS audio ${resp.status}`);
+    return resp.blob();
+  }));
+
+  ttsAudioUrls.forEach(u => URL.revokeObjectURL(u));
+  ttsAudioUrls = blobs.map(b => URL.createObjectURL(b));
+  ttsAudioQueue = ttsAudioUrls.map(u => new Audio(u));
+  ttsAudioQueueIdx = 0;
 
   ttsSpeaking = true;
   ttsPaused = false;
   updateTTSBtn('playing');
+  playNextFreeTTS();
 }
 
 function startBrowserTTS() {
@@ -366,29 +371,26 @@ function toggleTTS() {
   if (!currentStoryText) return;
 
   if (ttsPaused) {
-    if (ttsAudio) { ttsAudio.play(); } else { speechSynthesis.resume(); }
+    if (ttsAudio) ttsAudio.play(); else speechSynthesis.resume();
     ttsPaused = false;
     updateTTSBtn('playing');
     return;
   }
 
   if (ttsSpeaking) {
-    if (ttsAudio) { ttsAudio.pause(); } else { speechSynthesis.pause(); }
+    if (ttsAudio) ttsAudio.pause(); else speechSynthesis.pause();
     ttsPaused = true;
     updateTTSBtn('paused');
     return;
   }
 
-  if (elevenlabsApiKey) {
-    speakWithElevenLabs(currentStoryText).catch(err => {
-      updateTTSBtn('stopped');
-      const label = document.getElementById('ttsQuality');
-      label.textContent = '⚠ ' + err.message;
-      setTimeout(() => { label.textContent = 'ElevenLabs AI голос ✨'; }, 5000);
-    });
-  } else {
+  speakWithFreeTTS(currentStoryText).catch(err => {
+    updateTTSBtn('stopped');
+    const label = document.getElementById('ttsQuality');
+    label.textContent = '⚠ ' + err.message + ' — переключаюсь на браузер';
     startBrowserTTS();
-  }
+    setTimeout(() => { label.textContent = 'FreeTTS нейронный голос 🎙'; }, 5000);
+  });
 }
 
 function updateTTSBtn(state) {

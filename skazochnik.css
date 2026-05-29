@@ -353,27 +353,6 @@ select option { background: #1a1035; color: var(--text); }
 .tts-btn svg { width: 16px; height: 16px; }
 .tts-info { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; padding-top: 8px; }
 .tts-label { color: var(--muted); font-size: 13px; }
-.elevenlabs-key-row { display: flex; gap: 6px; align-items: center; }
-.elevenlabs-key-row input {
-  flex: 1; min-width: 0;
-  font-size: 12px; padding: 5px 10px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: inherit;
-}
-.elevenlabs-key-row input::placeholder { color: var(--muted); }
-.elevenlabs-key-row button {
-  padding: 5px 10px; font-size: 12px;
-  background: rgba(251,191,36,0.1);
-  border: 1px solid rgba(251,191,36,0.3);
-  border-radius: 8px; color: var(--gold);
-  font-family: 'Nunito', sans-serif; font-weight: 700;
-  cursor: pointer; white-space: nowrap;
-  transition: background 0.2s;
-}
-.elevenlabs-key-row button:hover { background: rgba(251,191,36,0.2); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; display: inline-block; }
 
