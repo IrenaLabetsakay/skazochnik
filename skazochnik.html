@@ -29,6 +29,15 @@
     </div>
   </div>
 
+  <!-- ElevenLabs TTS API Key Notice -->
+  <div class="api-notice" id="elevenLabsNotice">
+    <strong>Нейронный голос (необязательно).</strong> Введите ключ ElevenLabs API для качественного русского голоса. Без ключа используется браузерный TTS. Бесплатно 10k символов/месяц на <a href="https://elevenlabs.io" target="_blank" style="color:inherit">elevenlabs.io</a> — карта не нужна.
+    <div class="api-key-row">
+      <input type="password" id="elevenLabsKeyInput" placeholder="sk_..." />
+      <button onclick="saveElevenLabsKey()">Сохранить</button>
+    </div>
+  </div>
+
   <!-- Form -->
   <div class="form-card">
     <div class="form-grid">
@@ -107,7 +116,7 @@
         Озвучить
       </button>
       <div class="tts-info">
-        <span class="tts-label" id="ttsQuality">FreeTTS нейронный голос 🎙</span>
+        <span class="tts-label" id="ttsQuality">Браузерный голос ru-RU</span>
       </div>
     </div>
     <button class="btn-new" onclick="newStory()">↺ Новая сказка</button>
